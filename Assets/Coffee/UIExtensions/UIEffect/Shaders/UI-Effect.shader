@@ -74,6 +74,8 @@ Shader "UI/Hidden/UI-Effect"
 				float4 color    : COLOR;
 				float2 texcoord : TEXCOORD0;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
+
+				float2 uvMask : TEXCOORD1;
 			};
 
 			struct v2f
@@ -85,6 +87,7 @@ Shader "UI/Hidden/UI-Effect"
 				UNITY_VERTEX_OUTPUT_STEREO
 
 				half param : TEXCOORD2;
+				half4 uvMask : TEXCOORD3;
 			};
 			
 			fixed4 _Color;
@@ -106,8 +109,12 @@ Shader "UI/Hidden/UI-Effect"
 				
 				OUT.color = IN.color * _Color;
 
-				OUT.texcoord = UnpackToVec2(IN.texcoord.x);
+				OUT.texcoord = UnpackToVec2(IN.texcoord.x) * 2 - 0.5;
+
 				OUT.param = IN.texcoord.y;
+
+				OUT.uvMask.xy = UnpackToVec2(IN.uvMask.x);
+				OUT.uvMask.zw = UnpackToVec2(IN.uvMask.y);
 				
 				return OUT;
 			}
@@ -128,7 +135,7 @@ Shader "UI/Hidden/UI-Effect"
 				#endif
 
 				#if defined (UI_BLUR)
-				half4 color = (Tex2DBlurring(_MainTex, IN.texcoord, blurFactor * _MainTex_TexelSize.xy * 2) + _TextureSampleAdd);
+				half4 color = (Tex2DBlurring(_MainTex, IN.texcoord, blurFactor * _MainTex_TexelSize.xy * 2, IN.uvMask) + _TextureSampleAdd);
 				#else
 				half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd);
 				#endif
