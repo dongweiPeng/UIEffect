@@ -15,6 +15,8 @@ Shader "UI/Hidden/UI-Effect-Dissolve"
 
 		[Toggle(UNITY_UI_ALPHACLIP)] _UseUIAlphaClip ("Use Alpha Clip", Float) = 0
 
+		_ParamTex ("Parameter Texture", 2D) = "white" {}
+		
 		[Header(Dissolve)]
 		_NoiseTex("Noise Texture (A)", 2D) = "white" {}
 	}
@@ -82,6 +84,8 @@ Shader "UI/Hidden/UI-Effect-Dissolve"
 				
 				fixed4 effectFactor : TEXCOORD2;
 				fixed4 effectFactor2 : TEXCOORD3;
+
+				half param : TEXCOORD4;
 			};
 			
 			fixed4 _Color;
@@ -89,7 +93,8 @@ Shader "UI/Hidden/UI-Effect-Dissolve"
 			float4 _ClipRect;
 			sampler2D _MainTex;
 			sampler2D _NoiseTex;
-
+			sampler2D _ParamTex;
+			
 			v2f vert(appdata_t IN)
 			{
 				v2f OUT;
@@ -103,6 +108,9 @@ Shader "UI/Hidden/UI-Effect-Dissolve"
 				
 				OUT.color = IN.color * _Color;
 
+				OUT.texcoord = UnpackToVec2(IN.texcoord.x);
+				OUT.param = IN.texcoord.y;
+
 				//xy: Noize uv, z: Dissolve factor, w: width
 				OUT.effectFactor = UnpackToVec4(IN.uv1.x);
 
@@ -113,22 +121,29 @@ Shader "UI/Hidden/UI-Effect-Dissolve"
 
 			fixed4 frag(v2f IN) : SV_Target
 			{
+				fixed4 param1 = tex2D(_ParamTex, float2(0.25, IN.param));
+                fixed location = param1.x;
+                fixed width = param1.y/4;
+                fixed softness = param1.z;
+				fixed3 dissolveColor = tex2D(_ParamTex, float2(0.75, IN.param)).rgb;
+                
+
 				half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd) * IN.color;
 
 				color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
 
 				float cutout = tex2D(_NoiseTex, IN.effectFactor.xy).a;
-				float location = IN.effectFactor.z;
-				float width = IN.effectFactor.w/4;
+//				float location = IN.effectFactor.z;
+//				float width = IN.effectFactor.w/4;
 				float factor = cutout - location * ( 1 + width ) + width;
 
 				#ifdef UNITY_UI_ALPHACLIP
 				clip (min(color.a - 0.01, factor));
 				#endif
 
-				fixed edgeLerp = step(factor, color.a) * saturate((width - factor)*16/ IN.effectFactor2.w);
-				color = ApplyColorEffect(color, fixed4(IN.effectFactor2.rgb, edgeLerp));
-				color.a *= saturate((factor)*32/ IN.effectFactor2.w);
+				fixed edgeLerp = step(factor, color.a) * saturate((width - factor)*16/ softness);
+				color = ApplyColorEffect(color, fixed4(dissolveColor, edgeLerp));
+				color.a *= saturate((factor)*32/ softness);
 
 				return color;
 			}

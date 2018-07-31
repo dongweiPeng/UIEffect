@@ -14,6 +14,7 @@ namespace Coffee.UIExtensions
 		// Constant or Static Members.
 		//################################
 		public const string shaderName = "UI/Hidden/UI-Effect-Dissolve";
+		static readonly ParameterTexture _ptex = new ParameterTexture(8, 256, "_ParamTex");
 
 
 		//################################
@@ -176,6 +177,11 @@ namespace Coffee.UIExtensions
 		public AnimatorUpdateMode updateMode { get { return m_Runner.updateMode; } set { m_Runner.updateMode = value; } }
 
 		/// <summary>
+		/// Gets the parameter texture.
+		/// </summary>
+		public override ParameterTexture ptex { get { return _ptex; } }
+
+		/// <summary>
 		/// Modifies the material.
 		/// </summary>
 		public override void ModifyMaterial()
@@ -219,6 +225,8 @@ namespace Coffee.UIExtensions
 			if (!isActiveAndEnabled)
 				return;
 
+			float normalizedIndex = ptex.GetNormalizedIndex(this);
+
 			// rect.
 			Rect rect = m_EffectArea.GetEffectArea(vh, graphic);
 
@@ -226,9 +234,15 @@ namespace Coffee.UIExtensions
 			UIVertex vertex = default(UIVertex);
 			bool effectEachCharacter = graphic is Text && m_EffectArea == EffectArea.Character;
 			float x, y;
-			for (int i = 0; i < vh.currentVertCount; i++)
+			int count = vh.currentVertCount;
+			for (int i = 0; i < count; i++)
 			{
 				vh.PopulateUIVertex(ref vertex, i);
+
+				vertex.uv0 = new Vector2(
+					Packer.ToFloat(vertex.uv0.x, vertex.uv0.y),
+					normalizedIndex
+				);
 
 				if (effectEachCharacter)
 				{
@@ -249,6 +263,17 @@ namespace Coffee.UIExtensions
 			}
 		}
 
+		protected override void SetDirty()
+		{
+			ptex.RegisterMaterial(targetGraphic.material);
+			ptex.SetData(this, 0, m_Location);	// param1.x : location
+			ptex.SetData(this, 1, m_Width);		// param1.y : width
+			ptex.SetData(this, 2, m_Softness);	// param1.z : softness
+			ptex.SetData(this, 4, m_Color.r);	// param2.x : red
+			ptex.SetData(this, 5, m_Color.g);	// param2.y : green
+			ptex.SetData(this, 6, m_Color.b);	// param2.z : blue
+		}
+
 		/// <summary>
 		/// Play effect.
 		/// </summary>
@@ -267,6 +292,10 @@ namespace Coffee.UIExtensions
 		protected override void OnEnable()
 		{
 			base.OnEnable();
+			if (m_Runner == null)
+			{
+				m_Runner = new EffectRunner();
+			}
 			m_Runner.OnEnable(f => location = f);
 		}
 

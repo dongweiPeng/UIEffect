@@ -12,6 +12,7 @@ namespace Coffee.UIExtensions
 		// Constant or Static Members.
 		//################################
 		public const string shaderName = "UI/Hidden/UI-Effect-Transition";
+		static readonly ParameterTexture _ptex = new ParameterTexture(1, 256, "_ParamTex");
 
 		/// <summary>
 		/// Effect mode.
@@ -57,6 +58,11 @@ namespace Coffee.UIExtensions
 		public EffectMode effectMode { get { return m_EffectMode; } }
 
 		/// <summary>
+		/// Gets the parameter texture.
+		/// </summary>
+		public override ParameterTexture ptex { get { return _ptex; } }
+
+		/// <summary>
 		/// Modifies the mesh.
 		/// </summary>
 		public override void ModifyMesh(VertexHelper vh)
@@ -66,24 +72,24 @@ namespace Coffee.UIExtensions
 				return;
 			}
 
-			UIVertex vt;
-			vh.GetUIVertexStream(tempVerts);
-
-			// Pack effect prameters.
-			Vector2 factor = new Vector2(effectFactor, 0);
-
-			// Set prameters to vertex.
-			for (int i = 0; i < tempVerts.Count; i++)
+			float normalizedIndex = ptex.GetNormalizedIndex(this);
+			UIVertex vertex = default(UIVertex);
+			int count = vh.currentVertCount;
+			for (int i = 0; i < count; i++)
 			{
-				vt = tempVerts[i];
-				vt.uv1 = factor;
-				tempVerts[i] = vt;
+				vh.PopulateUIVertex(ref vertex, i);
+				vertex.uv0 = new Vector2(
+					Packer.ToFloat(vertex.uv0.x, vertex.uv0.y),
+					normalizedIndex
+				);
+				vh.SetUIVertex(vertex, i);
 			}
+		}
 
-			vh.Clear();
-			vh.AddUIVertexTriangleStream(tempVerts);
-
-			tempVerts.Clear();
+		protected override void SetDirty()
+		{
+			ptex.RegisterMaterial(targetGraphic.material);
+			ptex.SetData(this, 0, m_EffectFactor);	// param1.x : effect factor
 		}
 
 #if UNITY_EDITOR

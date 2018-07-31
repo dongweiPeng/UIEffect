@@ -14,6 +14,8 @@ Shader "UI/Hidden/UI-Effect-Transition"
 		_ColorMask ("Color Mask", Float) = 15
 
 		[Toggle(UNITY_UI_ALPHACLIP)] _UseUIAlphaClip ("Use Alpha Clip", Float) = 0
+
+		_ParamTex ("Parameter Texture", 2D) = "white" {}
 	}
 
 	SubShader
@@ -57,13 +59,13 @@ Shader "UI/Hidden/UI-Effect-Transition"
 
 			#include "UnityCG.cginc"
 			#include "UnityUI.cginc"
-
+			#include "UI-Effect.cginc"
+			
 			struct appdata_t
 			{
 				float4 vertex	: POSITION;
 				float4 color	: COLOR;
 				float2 texcoord	: TEXCOORD0;
-				half factor		: TEXCOORD1;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
@@ -73,7 +75,7 @@ Shader "UI/Hidden/UI-Effect-Transition"
 				fixed4 color	: COLOR;
 				float2 texcoord	: TEXCOORD0;
 				float4 wpos		: TEXCOORD1;
-				half factor		: TEXCOORD2;
+				half param		: TEXCOORD2;
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
 			
@@ -81,6 +83,7 @@ Shader "UI/Hidden/UI-Effect-Transition"
 			fixed4 _TextureSampleAdd;
 			float4 _ClipRect;
 			sampler2D _MainTex;
+			sampler2D _ParamTex;
 			
 			v2f vert(appdata_t IN)
 			{
@@ -90,10 +93,10 @@ Shader "UI/Hidden/UI-Effect-Transition"
 				OUT.wpos = IN.vertex;
 				OUT.vertex = UnityObjectToClipPos(OUT.wpos);
 
-				OUT.texcoord = IN.texcoord;
+				OUT.texcoord = UnpackToVec2(IN.texcoord.x);
+				OUT.param = IN.texcoord.y;
 				
 				OUT.color = IN.color * _Color;
-				OUT.factor = IN.factor;
 				
 				return OUT;
 			}
@@ -101,20 +104,23 @@ Shader "UI/Hidden/UI-Effect-Transition"
 
 			fixed4 frag(v2f IN) : SV_Target
 			{
-				half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd) * IN.color;
+				fixed factor = tex2D(_ParamTex, float2(0.5, IN.param)).x;
+
+				half4 color = tex2D(_MainTex, IN.texcoord);
+				fixed originAlpha = color.a;
+				color = (color + _TextureSampleAdd) * IN.color;
 				color.a *= UnityGet2DClipping(IN.wpos.xy, _ClipRect);
 
 				#ifdef CUTOFF
-				clip (color.a - 1 + IN.factor * 1.001);
+				clip (color.a - 1 + factor * 1.001);
 				#elif UNITY_UI_ALPHACLIP
 				clip (color.a - 0.001);
 				#endif
 
+				color.rgb = IN.color.rgb;
 				#if MONO
-				color.rgb = IN.color.rgb;
-				color.a = color.a * tex2D(_MainTex, IN.texcoord).a + IN.factor * 2 - 1;
+				color.a = color.a * originAlpha + factor * 2 - 1;
 				#elif CUTOFF
-				color.rgb = IN.color.rgb;
 				color.a = 1;
 				#endif
 
