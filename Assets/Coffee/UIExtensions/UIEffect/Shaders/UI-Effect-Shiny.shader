@@ -66,8 +66,6 @@ Shader "UI/Hidden/UI-Effect-Shiny"
 				float4 color	: COLOR;
 				float2 texcoord : TEXCOORD0;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
-
-				float2 uv1 : TEXCOORD1;
 			};
 
 			struct v2f
@@ -77,11 +75,8 @@ Shader "UI/Hidden/UI-Effect-Shiny"
 				float2 texcoord  : TEXCOORD0;
 				float4 worldPosition : TEXCOORD1;
 				UNITY_VERTEX_OUTPUT_STEREO
-				
-				half4 effectFactor : TEXCOORD2;
-				half2 effectFactor2 : TEXCOORD3;
 
-				half param : TEXCOORD4;
+				half2 param : TEXCOORD2;
 			};
 			
 			fixed4 _Color;
@@ -100,28 +95,21 @@ Shader "UI/Hidden/UI-Effect-Shiny"
 
 				OUT.vertex = UnityObjectToClipPos(IN.vertex);
 
-				OUT.texcoord = IN.texcoord;
-				
 				OUT.color = IN.color * _Color;
 
 				OUT.texcoord = UnpackToVec2(IN.texcoord.x);
-				OUT.param = IN.texcoord.y;
-
-				OUT.effectFactor = UnpackToVec4(IN.uv1.x);
-				OUT.effectFactor2 = UnpackToVec2(IN.uv1.y);
-
-				OUT.effectFactor2.x = OUT.effectFactor2.x * 2 - 0.5;
+				OUT.param = UnpackToVec2(IN.texcoord.y);
 				return OUT;
 			}
 
 			fixed4 frag(v2f IN) : SV_Target
 			{
-				fixed nomalizedPos = IN.effectFactor.x;
+				fixed nomalizedPos = IN.param.x;
 			
-				fixed4 param1 = tex2D(_ParamTex, float2(0.25, IN.param));
-				fixed4 param2 = tex2D(_ParamTex, float2(0.75, IN.param));
-                fixed location = param1.x;
-                fixed width = param1.y/4;
+				fixed4 param1 = tex2D(_ParamTex, float2(0.25, IN.param.y));
+				fixed4 param2 = tex2D(_ParamTex, float2(0.75, IN.param.y));
+                half location = param1.x * 2 - 0.5;
+                fixed width = param1.y;
                 fixed softness = param1.z;
 				fixed brightness = param1.w;
 				fixed gloss = param2.x;
@@ -134,13 +122,6 @@ Shader "UI/Hidden/UI-Effect-Shiny"
 				#ifdef UNITY_UI_ALPHACLIP
 				clip (color.a - 0.001);
 				#endif
-
-//				fixed nomalizedPos = IN.effectFactor.x;
-//				fixed softness = IN.effectFactor.y;
-//				fixed width = IN.effectFactor.z;
-//				fixed brightness = IN.effectFactor.w;
-//				half location = IN.effectFactor2.x;
-//				half gloss = IN.effectFactor2.y;
 
 				half normalized = 1 - saturate(abs((nomalizedPos - location) / width));
 				half shinePower = smoothstep(0, softness*2, normalized);

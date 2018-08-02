@@ -333,10 +333,6 @@ namespace Coffee.UIExtensions
 			{
 				vh.PopulateUIVertex(ref vertex, i);
 
-				vertex.uv0 = new Vector2(
-					Packer.ToFloat(vertex.uv0.x, vertex.uv0.y),
-					normalizedIndex
-				);
 
 				// Normalize vertex position by local matrix.
 				if (effectEachCharacter)
@@ -348,9 +344,9 @@ namespace Coffee.UIExtensions
 					nomalizedPos = localMatrix * vertex.position;
 				}
 
-				vertex.uv1 = new Vector2(
-					Packer.ToFloat(Mathf.Clamp01(nomalizedPos.y), m_Softness, m_Width, m_Brightness),
-					Packer.ToFloat(m_Location, m_Gloss)
+				vertex.uv0 = new Vector2(
+					Packer.ToFloat(vertex.uv0.x, vertex.uv0.y),
+					Packer.ToFloat(nomalizedPos.y, normalizedIndex)
 				);
 
 				vh.SetUIVertex(vertex, i);
