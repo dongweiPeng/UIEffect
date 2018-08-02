@@ -70,8 +70,6 @@ Shader "UI/Hidden/UI-Effect-Dissolve"
 				float4 color	: COLOR;
 				float2 texcoord : TEXCOORD0;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
-
-				float2 uv1 : TEXCOORD1;
 			};
 
 			struct v2f
@@ -81,11 +79,8 @@ Shader "UI/Hidden/UI-Effect-Dissolve"
 				float2 texcoord  : TEXCOORD0;
 				float4 worldPosition : TEXCOORD1;
 				UNITY_VERTEX_OUTPUT_STEREO
-				
-				fixed4 effectFactor : TEXCOORD2;
-				fixed4 effectFactor2 : TEXCOORD3;
 
-				half param : TEXCOORD4;
+				half3 param : TEXCOORD2;
 			};
 			
 			fixed4 _Color;
@@ -109,32 +104,23 @@ Shader "UI/Hidden/UI-Effect-Dissolve"
 				OUT.color = IN.color * _Color;
 
 				OUT.texcoord = UnpackToVec2(IN.texcoord.x);
-				OUT.param = IN.texcoord.y;
-
-				//xy: Noize uv, z: Dissolve factor, w: width
-				OUT.effectFactor = UnpackToVec4(IN.uv1.x);
-
-				//xyz: color, w: softness
-				OUT.effectFactor2 = UnpackToVec4(IN.uv1.y);
+				OUT.param = UnpackToVec3(IN.texcoord.y);
 				return OUT;
 			}
 
 			fixed4 frag(v2f IN) : SV_Target
 			{
-				fixed4 param1 = tex2D(_ParamTex, float2(0.25, IN.param));
+				fixed4 param1 = tex2D(_ParamTex, float2(0.25, IN.param.x));
                 fixed location = param1.x;
                 fixed width = param1.y/4;
                 fixed softness = param1.z;
-				fixed3 dissolveColor = tex2D(_ParamTex, float2(0.75, IN.param)).rgb;
-                
+				fixed3 dissolveColor = tex2D(_ParamTex, float2(0.75, IN.param.x)).rgb;
+				float cutout = tex2D(_NoiseTex, IN.param.yz).a;
 
 				half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd) * IN.color;
 
 				color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
 
-				float cutout = tex2D(_NoiseTex, IN.effectFactor.xy).a;
-//				float location = IN.effectFactor.z;
-//				float width = IN.effectFactor.w/4;
 				float factor = cutout - location * ( 1 + width ) + width;
 
 				#ifdef UNITY_UI_ALPHACLIP

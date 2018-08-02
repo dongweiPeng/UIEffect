@@ -239,11 +239,6 @@ namespace Coffee.UIExtensions
 			{
 				vh.PopulateUIVertex(ref vertex, i);
 
-				vertex.uv0 = new Vector2(
-					Packer.ToFloat(vertex.uv0.x, vertex.uv0.y),
-					normalizedIndex
-				);
-
 				if (effectEachCharacter)
 				{
 					x = splitedCharacterPosition[i%4].x;
@@ -254,9 +249,10 @@ namespace Coffee.UIExtensions
 					x = Mathf.Clamp01(vertex.position.x / rect.width + 0.5f);
 					y = Mathf.Clamp01(vertex.position.y / rect.height + 0.5f);
 				}
-				vertex.uv1 = new Vector2(
-					Packer.ToFloat(x, y, location, m_Width),
-					Packer.ToFloat(m_Color.r, m_Color.g, m_Color.b, m_Softness)
+
+				vertex.uv0 = new Vector2(
+					Packer.ToFloat(vertex.uv0.x, vertex.uv0.y),
+					Packer.ToFloat(normalizedIndex, x, y)
 				);
 
 				vh.SetUIVertex(vertex, i);
