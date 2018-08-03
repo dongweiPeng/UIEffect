@@ -226,7 +226,7 @@ namespace Coffee.UIExtensions
 				return;
 
 			float normalizedIndex = ptex.GetNormalizedIndex(this);
-
+			Debug.Log(this + ", " + normalizedIndex);
 			// rect.
 			Rect rect = m_EffectArea.GetEffectArea(vh, graphic);
 
@@ -252,7 +252,7 @@ namespace Coffee.UIExtensions
 
 				vertex.uv0 = new Vector2(
 					Packer.ToFloat(vertex.uv0.x, vertex.uv0.y),
-					Packer.ToFloat(normalizedIndex, x, y)
+					Packer.ToFloat(x, y, normalizedIndex)
 				);
 
 				vh.SetUIVertex(vertex, i);

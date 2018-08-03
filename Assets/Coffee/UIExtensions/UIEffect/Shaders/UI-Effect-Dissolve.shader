@@ -110,12 +110,12 @@ Shader "UI/Hidden/UI-Effect-Dissolve"
 
 			fixed4 frag(v2f IN) : SV_Target
 			{
-				fixed4 param1 = tex2D(_ParamTex, float2(0.25, IN.param.x));
+				fixed4 param1 = tex2D(_ParamTex, float2(0.25, IN.param.z));
                 fixed location = param1.x;
                 fixed width = param1.y/4;
                 fixed softness = param1.z;
-				fixed3 dissolveColor = tex2D(_ParamTex, float2(0.75, IN.param.x)).rgb;
-				float cutout = tex2D(_NoiseTex, IN.param.yz).a;
+				fixed3 dissolveColor = tex2D(_ParamTex, float2(0.75, IN.param.z)).rgb;
+				float cutout = tex2D(_NoiseTex, IN.param.xy).a;
 
 				half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd) * IN.color;
 

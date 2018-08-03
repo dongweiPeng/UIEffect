@@ -113,7 +113,7 @@ namespace Coffee.UIExtensions
 
 		public float GetNormalizedIndex(IParameterTexture target)
 		{
-			return ((float)target.parameterIndex - 0.5f) / _instanceLimit;
+			return ((float)target.parameterIndex) / _instanceLimit;
 		}
 	}
 }
