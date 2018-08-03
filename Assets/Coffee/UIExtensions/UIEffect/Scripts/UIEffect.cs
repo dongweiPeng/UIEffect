@@ -83,7 +83,6 @@ namespace Coffee.UIExtensions
 		[SerializeField][Range(0, 1)] float m_ToneLevel = 1;
 		[SerializeField][Range(0, 1)] float m_ColorFactor = 1;
 		[SerializeField][Range(0, 1)] float m_Blur = 1;
-		[SerializeField] bool m_AdvancedBlur;
 		[Obsolete][HideInInspector]
 		[SerializeField][Range(0, 1)] float m_ShadowBlur = 1;
 		[Obsolete][HideInInspector]
@@ -101,8 +100,13 @@ namespace Coffee.UIExtensions
 		[Obsolete][HideInInspector]
 		[SerializeField] List<UIShadow.AdditionalShadow> m_AdditionalShadows = new List<UIShadow.AdditionalShadow>();
 
+		[SerializeField] bool m_AdvancedBlur = false;
 
-
+		public enum BlurEx
+		{
+			None = 0,
+			Ex = 1,
+		}
 
 		//################################
 		// Public Members.
@@ -180,7 +184,7 @@ namespace Coffee.UIExtensions
 
 
 
-			if (blurMode != BlurMode.None && m_AdvancedBlur)
+			if (m_AdvancedBlur)
 			{
 				vh.GetUIVertexStream(tempVerts);
 				vh.Clear();
@@ -193,7 +197,7 @@ namespace Coffee.UIExtensions
 				Vector3 size = default(Vector3);
 				Vector3 tPos = default(Vector3);
 				Vector3 tUV = default(Vector3);
-				float expand = Mathf.Ceil((int)blurMode * 4);
+				float expand = (float)blurMode * 6;
 
 				for (int i = 0; i < count; i += bundleSize)
 				{
@@ -266,7 +270,6 @@ namespace Coffee.UIExtensions
 			{
 				int count = vh.currentVertCount;
 				UIVertex vt = default(UIVertex);
-				Vector2 uv1 = new Vector2(Packer.ToFloat(0,0), Packer.ToFloat(1,1));
 				for (int i = 0; i < count; i++)
 				{
 					vh.PopulateUIVertex(ref vt, i);
@@ -275,7 +278,6 @@ namespace Coffee.UIExtensions
 						Packer.ToFloat((uv0.x + 0.5f) / 2f, (uv0.y + 0.5f) / 2f),
 						normalizedIndex
 					);
-					vt.uv1 = uv1;
 					vh.SetUIVertex(vt, i);
 				}
 			}
@@ -415,7 +417,7 @@ namespace Coffee.UIExtensions
 			{
 				return null;
 			}
-			return MaterialResolver.GetOrGenerateMaterialVariant(Shader.Find(shaderName), m_ToneMode, m_ColorMode, m_BlurMode);
+			return MaterialResolver.GetOrGenerateMaterialVariant(Shader.Find(shaderName), m_ToneMode, m_ColorMode, m_BlurMode, m_AdvancedBlur ? BlurEx.Ex : BlurEx.None);
 		}
 
 		#pragma warning disable 0612
@@ -470,7 +472,11 @@ namespace Coffee.UIExtensions
 					}
 				}
 
-				if (m_ToneMode == ToneMode.Hue)
+				int tone = (int)m_ToneMode;
+				const int Mono = 5;
+				const int Cutoff = 6;
+				const int Hue = 7;
+				if (tone == Hue)
 				{
 					var go = gameObject;
 					var hue = m_ToneLevel;
@@ -480,13 +486,14 @@ namespace Coffee.UIExtensions
 					hsv.range = 1;
 				}
 
-				if (m_ToneMode == ToneMode.Cutoff || m_ToneMode == ToneMode.Mono)
+				// Cutoff/Mono
+				if (tone == Cutoff || tone == Mono)
 				{
 					var go = gameObject;
 					var factor = m_ToneLevel;
-					var transitionMode = m_ToneMode == ToneMode.Cutoff
+					var transitionMode = tone == Cutoff
 						? UITransitionEffect.EffectMode.Cutoff
-						: UITransitionEffect.EffectMode.Mono;
+						: UITransitionEffect.EffectMode.Fade;
 					DestroyImmediate(this, true);
 					var trans = go.GetComponent<UITransitionEffect>() ?? go.AddComponent<UITransitionEffect>();
 					trans.effectFactor = factor;
