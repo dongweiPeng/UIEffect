@@ -84,7 +84,7 @@ namespace Coffee.UIExtensions
 				//UnityEditor.EditorApplication.delayCall += () =>
 				{
 					UnityEditor.EditorUtility.SetDirty(this);
-					if (gameObject && gameObject.scene.IsValid())
+					if (!Application.isPlaying && gameObject && gameObject.scene.IsValid())
 					{
 						UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
 					}
